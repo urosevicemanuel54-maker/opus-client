@@ -48,8 +48,9 @@ The repository has to stay public for the raw URL to resolve.
 
 | Tab | What it actually does |
 | --- | --- |
-| **ESP** | Live player boxes: boxes, names, health bars, distance, team check, fill, line thickness, range. The counter shows how many players are currently in range. |
+| **ESP** | Live player boxes drawn from each character's real bounding box: boxes, names, health bars, distance, team check, fill, line thickness, range, plus X/Y calibration sliders. The counter shows how many players are in range. |
 | **Visuals** | Watermark and FPS counter render on screen; the smoothness slider re-times every animation in the menu. |
+| **Соц** | The multiplayer part — emotes and custom animations play on your character and are replicated, and chat messages go to the public channel. See below. |
 | **Разное** | Floating button on/off, background blur on/off, animations on/off, reset everything. |
 | **Образы** | Eight gradient presets repaint the menu background live, plus a reset. |
 | **Музыка** | Sound ID field, volume, play/pause and a 26-bar visualizer that only animates while playing. |
@@ -58,6 +59,39 @@ The repository has to stay public for the raw URL to resolve.
 | **Настройки** | Menu background photo (ID + transparency + apply/reset), language, effects, window transparency. |
 | **Дополнения** | Four addon switches. |
 | **Themes** | Accent colour (recolours the entire menu), corner radius and window transparency. |
+
+## What other players can actually see
+
+A `LocalScript` cannot replicate world props, parts or GUI to anyone else —
+that needs the server. Three things do propagate from your client, and the
+**Соц** tab exposes exactly those:
+
+| Feature | Why it replicates |
+| --- | --- |
+| Emotes (wave, dance, laugh, cheer, point, salute, shrug, stomp) | `Humanoid:PlayEmote` runs a real emote track on your character; character animations are client-authoritative and replicate. |
+| Custom animation | An `Animation` loaded through your `Animator` and played on your character, same replication path. Loop it and everyone sees it. |
+| Chat | `TextChannel:SendAsync` on `RBXGeneral` (or the legacy `SayMessageRequest` fallback) posts to the public channel. |
+
+Anything else — coloured boxes, trails, name tags, item spawns — would only
+ever appear on your own screen.
+
+## Preview panel
+
+The right-hand panel is a live `ViewportFrame` turntable of your current
+character: it clones the rig into a `WorldModel`, strips scripts and the
+Humanoid, frames a camera from the clone's bounding box and spins it slowly.
+It rebuilds itself on respawn and on click, and shows your display name and
+`@handle` underneath.
+
+## ESP coordinates
+
+Boxes are built from `Model:GetBoundingBox()` rather than fixed head/foot
+offsets, so accessories and odd character sizes are included, and the width
+comes from the box's own aspect ratio. They are projected with
+`WorldToScreenPoint` into a `ScreenGui` with `IgnoreGuiInset = true`, so both
+sides use the absolute screen origin. If a device still reports a shifted
+result, **ESP → Калибровка** has pixel X/Y offsets to nudge it.
+
 
 ## Language
 
@@ -109,3 +143,7 @@ button so nothing is ever stranded off-screen.
 * The Music tab plays whatever asset ID you paste in; no audio is bundled, and
   the visualizer runs on a sine wave rather than real waveform data.
 * `CanvasGroup` requires a reasonably recent Roblox client.
+* `Humanoid:PlayEmote` returns false for emotes the account does not own — the
+  toast says so instead of faking success.
+* Emotes, custom animations and chat are the only things here other players
+  can see. Everything else is drawn on your own screen.

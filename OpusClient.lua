@@ -62,11 +62,14 @@ local State = {
 		fill = false,
 		thickness = 1.4,
 		maxDistance = 600,
+		offsetX = 0,
+		offsetY = 0,
 	},
 
 	visuals = { watermark = true, fps = true, smoothness = 0.5 },
 	misc = { toggleButton = true, blur = true, animations = true },
 	music = { id = "", volume = 0.4, playing = false, track = 1 },
+	social = { animId = "" },
 	addons = { hitsounds = false, trails = true, chat = true, lowspec = false },
 	profiles = {},
 }
@@ -173,6 +176,44 @@ local Strings = {
 	toast_theme = { ru = "Тема обновлена", en = "Theme updated" },
 	ru_label = { ru = "RU", en = "RU" },
 	en_label = { ru = "EN", en = "EN" },
+
+	social = { ru = "Соц", en = "Social" },
+	social_sub = { ru = "То, что видят другие игроки", en = "What other players can actually see" },
+	emotes = { ru = "Эмоции", en = "Emotes" },
+	emote_wave = { ru = "Привет", en = "Wave" },
+	emote_dance = { ru = "Танец", en = "Dance" },
+	emote_laugh = { ru = "Смех", en = "Laugh" },
+	emote_cheer = { ru = "Ура", en = "Cheer" },
+	emote_point = { ru = "Указать", en = "Point" },
+	emote_salute = { ru = "Салют", en = "Salute" },
+	emote_shrug = { ru = "Плечи", en = "Shrug" },
+	emote_stomp = { ru = "Топот", en = "Stomp" },
+	custom_anim = { ru = "Своя анимация", en = "Custom animation" },
+	animation_id = { ru = "ID анимации", en = "Animation ID" },
+	stop = { ru = "Стоп", en = "Stop" },
+	chat = { ru = "Чат", en = "Chat" },
+	chat_message = { ru = "Сообщение", en = "Message" },
+	send = { ru = "Отправить", en = "Send" },
+	social_note = {
+		ru = "Эмоции и анимация проигрываются на вашем персонаже и повторяются сервером — их видят все. Чат отправляется в общий канал.",
+		en = "Emotes and animations play on your character and are replicated — everyone sees them. Chat goes to the public channel.",
+	},
+
+	calibration = { ru = "Калибровка", en = "Calibration" },
+	offset_x = { ru = "Смещение по X", en = "Offset X" },
+	offset_y = { ru = "Смещение по Y", en = "Offset Y" },
+	calibration_note = {
+		ru = "Если боксы ESP стоят не по персонажу — подвиньте их этими ползунками.",
+		en = "If the ESP boxes sit off the character, nudge them with these sliders.",
+	},
+
+	toast_emote = { ru = "Эмоция отправлена", en = "Emote played" },
+	toast_noemote = { ru = "Эмоция недоступна", en = "Emote unavailable" },
+	toast_nocharacter = { ru = "Персонаж не готов", en = "Character not ready" },
+	toast_badid = { ru = "Неверный ID", en = "Invalid ID" },
+	toast_stopped = { ru = "Анимация остановлена", en = "Animation stopped" },
+	toast_chatfail = { ru = "Чат недоступен", en = "Chat unavailable" },
+	preview_live = { ru = "LIVE", en = "LIVE" },
 }
 
 ---------------------------------------------------------------
@@ -998,8 +1039,6 @@ local backgroundImage = new("ImageLabel", {
 	BorderSizePixel = 0,
 }, backgroundHolder)
 
-local previewImage
-
 local function setBackgroundImage(id)
 	State.photo.gradient = nil
 	backgroundFill.BackgroundTransparency = 1
@@ -1010,11 +1049,6 @@ local function setBackgroundImage(id)
 
 	backgroundImage.Image = asset
 	anim(backgroundImage, { ImageTransparency = transparency }, 0.3)
-
-	if previewImage then
-		previewImage.Image = asset
-		anim(previewImage, { ImageTransparency = transparency }, 0.3)
-	end
 end
 
 local function setBackgroundGradient(first, second)
@@ -1529,7 +1563,7 @@ local modulesArrow = chevron(modulesHeader, 180, 16, 12, "down", Theme.Dim, 0.15
 local moduleList = new("Frame", {
 	Name = "ModuleList",
 	Position = UDim2.fromOffset(0, 44),
-	Size = UDim2.new(1, 0, 0, 150),
+	Size = UDim2.new(1, 0, 0, 180),
 	BackgroundTransparency = 1,
 }, sidebar)
 new("UIListLayout", {
@@ -1540,6 +1574,7 @@ new("UIListLayout", {
 local moduleData = {
 	{ key = "esp", glyph = "ring", page = "esp" },
 	{ key = "visuals", glyph = "dot", page = "visuals" },
+	{ key = "social", glyph = "ring", page = "social" },
 	{ key = "misc", glyph = "pause", page = "misc" },
 	{ key = "images", glyph = "ring", page = "images" },
 	{ key = "music", glyph = "dot", page = "music" },
@@ -1847,72 +1882,101 @@ stroke(preview, Theme.Stroke, 0.75, 1)
 
 local blobHalo = new("Frame", {
 	Name = "Halo",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 74),
-	Size = UDim2.new(0.84, 0, 0, 94),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(0.5, 0, 0.5, -14),
+	Size = UDim2.new(0, 214, 0, 356),
 	BackgroundColor3 = Theme.Accent,
-	BackgroundTransparency = 0.88,
+	BackgroundTransparency = 0.9,
 	BorderSizePixel = 0,
 }, preview)
-corner(blobHalo, 47)
+corner(blobHalo, 107)
 bindAccent(blobHalo)
 
-local previewBlob = new("Frame", {
-	Name = "Photo",
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 88),
-	Size = UDim2.new(0.74, 0, 0, 66),
-	BackgroundColor3 = Theme.Accent,
-	BackgroundTransparency = State.photo.transparency,
-	BorderSizePixel = 0,
-}, preview)
-corner(previewBlob, 33)
-bindAccent(previewBlob)
+local refreshAvatar
 
-previewImage = new("ImageLabel", {
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 88),
-	Size = UDim2.new(0.74, 0, 0, 66),
+local avatarFrame = new("ViewportFrame", {
+	Name = "Avatar",
+	Position = UDim2.fromOffset(6, 6),
+	Size = UDim2.new(1, -12, 1, -58),
 	BackgroundTransparency = 1,
-	Image = "",
-	ImageTransparency = 1,
+	Ambient = Color3.fromRGB(152, 152, 164),
+	LightColor = Color3.fromRGB(255, 255, 255),
+	LightDirection = Vector3.new(-0.55, -1, -0.45),
 	BorderSizePixel = 0,
 }, preview)
-corner(previewImage, 33)
 
-local previewWires = {}
-for _, spec in ipairs({
-	{ 48, 206, 216, 92 },
-	{ 74, 302, 56, 62 },
-	{ 152, 300, 94, 58 },
-	{ 120, 372, 36, 34 },
-}) do
-	local box = new("Frame", {
-		Name = "Wire",
-		Position = UDim2.fromOffset(spec[1], spec[2]),
-		Size = UDim2.fromOffset(spec[3], spec[4]),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-	}, preview)
-	local boxStroke = stroke(box, Theme.Accent, 0.55, 1.4)
-	table.insert(previewWires, boxStroke)
-end
+local avatarWorld = new("WorldModel", {}, avatarFrame)
+local avatarCamera = new("Camera", { FieldOfView = 32 }, avatarWorld)
+avatarFrame.CurrentCamera = avatarCamera
 
-local previewMark = new("TextLabel", {
+local previewName = new("TextLabel", {
+	Name = "Name",
 	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -14),
-	Size = UDim2.fromOffset(240, 16),
+	Position = UDim2.new(0.5, 0, 1, -24),
+	Size = UDim2.new(1, -30, 0, 20),
+	BackgroundTransparency = 1,
+	Font = Enum.Font.GothamBold,
+	TextSize = 14,
+	TextColor3 = Theme.Text,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	TextTruncate = Enum.TextTruncate.AtEnd,
+	Text = "",
+}, preview)
+
+local previewHandle = new("TextLabel", {
+	Name = "Handle",
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -8),
+	Size = UDim2.new(1, -30, 0, 14),
 	BackgroundTransparency = 1,
 	Font = Enum.Font.Gotham,
-	TextSize = 10,
+	TextSize = 11,
 	TextColor3 = Theme.Dim,
-	TextTransparency = 0.35,
-	Text = "ОПУС · modmenu · v1.8",
+	TextXAlignment = Enum.TextXAlignment.Center,
+	TextTruncate = Enum.TextTruncate.AtEnd,
+	Text = "",
 }, preview)
 
-bindRepaint(preview, function()
-	for _, item in ipairs(previewWires) do
-		item.Color = Theme.Accent
+local liveBadge = new("Frame", {
+	Name = "Live",
+	Position = UDim2.fromOffset(12, 12),
+	Size = UDim2.fromOffset(54, 20),
+	BackgroundColor3 = Theme.Accent,
+	BackgroundTransparency = 0.78,
+	BorderSizePixel = 0,
+}, preview)
+corner(liveBadge, 10)
+bindAccent(liveBadge)
+
+local liveDot = new("Frame", {
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 8, 0.5, 0),
+	Size = UDim2.fromOffset(5, 5),
+	BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+	BorderSizePixel = 0,
+}, liveBadge)
+corner(liveDot, 3)
+
+text(liveBadge, {
+	Position = UDim2.fromOffset(17, 0),
+	Size = UDim2.new(1, -17, 1, 0),
+	BackgroundTransparency = 1,
+	Font = Enum.Font.GothamBold,
+	TextSize = 9,
+	TextColor3 = Theme.Text,
+	TextXAlignment = Enum.TextXAlignment.Left,
+}, "preview_live")
+
+local refreshHit = new("TextButton", {
+	Name = "Refresh",
+	Size = UDim2.fromScale(1, 1),
+	BackgroundTransparency = 1,
+	Text = "",
+	AutoButtonColor = false,
+}, preview)
+refreshHit.MouseButton1Click:Connect(function()
+	if refreshAvatar then
+		refreshAvatar()
 	end
 end)
 
@@ -2088,6 +2152,11 @@ local updateWatermark
 local profileName = "default"
 local sound
 
+local playEmote
+local playCustomAnimation
+local stopCustomAnimation
+local sendChatMessage
+
 local Palette = {
 	Color3.fromRGB(238, 150, 216),
 	Color3.fromRGB(140, 170, 255),
@@ -2247,6 +2316,53 @@ PageBuilders.esp = function(page)
 			onlineValue.Text = tostring(espVisible)
 		end,
 	})
+
+	local calibration = Kit.card(page)
+	text(calibration, {
+		Size = UDim2.new(1, 0, 0, 18),
+		BackgroundTransparency = 1,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, "calibration")
+
+	Kit.slider(calibration, "offset_x", {
+		value = State.esp.offsetX or 0,
+		min = -80,
+		max = 80,
+		step = 1,
+		format = function(value)
+			return formatNumber(value, 0) .. " px"
+		end,
+		onChange = function(value)
+			State.esp.offsetX = value
+		end,
+	})
+
+	Kit.slider(calibration, "offset_y", {
+		value = State.esp.offsetY or 0,
+		min = -80,
+		max = 80,
+		step = 1,
+		format = function(value)
+			return formatNumber(value, 0) .. " px"
+		end,
+		onChange = function(value)
+			State.esp.offsetY = value
+		end,
+	})
+
+	text(calibration, {
+		Size = UDim2.new(1, 0, 0, 30),
+		BackgroundTransparency = 1,
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextColor3 = Theme.Dim,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+	}, "calibration_note")
 end
 
 -- Visuals -----------------------------------------------------------
@@ -2325,6 +2441,8 @@ PageBuilders.misc = function(page)
 			fill = false,
 			thickness = 1.4,
 			maxDistance = 600,
+			offsetX = 0,
+			offsetY = 0,
 		}
 		State.visuals = { watermark = true, fps = true, smoothness = 0.5 }
 		State.misc = { toggleButton = true, blur = true, animations = true }
@@ -2777,14 +2895,11 @@ PageBuilders.settings = function(page)
 		end,
 		onChange = function(value)
 			State.photo.transparency = value
-			previewBlob.BackgroundTransparency = math.clamp(value, 0.05, 0.95)
 			if State.photo.id ~= "" then
-				previewImage.ImageTransparency = value
 				backgroundImage.ImageTransparency = value
 			end
 			if State.photo.gradient then
 				backgroundGradient.Transparency = NumberSequence.new(math.clamp(value + 0.15, 0, 1))
-				previewBlob.BackgroundTransparency = math.clamp(value, 0.05, 0.95)
 			end
 		end,
 	})
@@ -2865,6 +2980,124 @@ PageBuilders.settings = function(page)
 end
 
 
+-- Social ------------------------------------------------------------
+
+PageMeta.social = { crumb = { "modules", "social" } }
+
+PageBuilders.social = function(page)
+	Kit.title(page, "social", "social_sub")
+
+	local emoteCard = Kit.card(page)
+	text(emoteCard, {
+		Size = UDim2.new(1, 0, 0, 20),
+		BackgroundTransparency = 1,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, "emotes")
+
+	local grid = new("Frame", {
+		Size = UDim2.new(1, 0, 0, 80),
+		BackgroundTransparency = 1,
+	}, emoteCard)
+	new("UIGridLayout", {
+		CellSize = UDim2.fromOffset(126, 36),
+		CellPadding = UDim2.fromOffset(8, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	}, grid)
+
+	local emotes = {
+		{ "wave", "emote_wave" },
+		{ "dance", "emote_dance" },
+		{ "laugh", "emote_laugh" },
+		{ "cheer", "emote_cheer" },
+		{ "point", "emote_point" },
+		{ "salute", "emote_salute" },
+		{ "shrug", "emote_shrug" },
+		{ "stomp", "emote_stomp" },
+	}
+
+	for index, emote in ipairs(emotes) do
+		local button = Kit.button(grid, emote[2], function()
+			if playEmote then
+				playEmote(emote[1])
+			end
+		end, index == 2)
+		button.LayoutOrder = index
+	end
+
+	local animCard = Kit.card(page)
+	text(animCard, {
+		Size = UDim2.new(1, 0, 0, 20),
+		BackgroundTransparency = 1,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, "custom_anim")
+
+	Kit.field(animCard, "animation_id", State.social.animId, function(value)
+		State.social.animId = value
+	end, "rbxassetid")
+
+	local animRow = new("Frame", {
+		Size = UDim2.new(1, 0, 0, 44),
+		BackgroundTransparency = 1,
+	}, animCard)
+
+	local playButton = Kit.button(animRow, "play", function()
+		if playCustomAnimation then
+			playCustomAnimation(State.social.animId)
+		end
+	end, true)
+	playButton.Position = UDim2.fromOffset(0, 5)
+
+	local stopButton = Kit.button(animRow, "stop", function()
+		if stopCustomAnimation then
+			stopCustomAnimation()
+		end
+	end)
+	stopButton.Position = UDim2.fromOffset(136, 5)
+
+	local chatCard = Kit.card(page)
+	text(chatCard, {
+		Size = UDim2.new(1, 0, 0, 20),
+		BackgroundTransparency = 1,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextColor3 = Theme.Text,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, "chat")
+
+	local chatBox = Kit.field(chatCard, "chat_message", "", nil, "привет")
+
+	local chatRow = new("Frame", {
+		Size = UDim2.new(1, 0, 0, 44),
+		BackgroundTransparency = 1,
+	}, chatCard)
+
+	local sendButton = Kit.button(chatRow, "send", function()
+		if sendChatMessage then
+			sendChatMessage(chatBox.Text)
+		end
+		chatBox.Text = ""
+	end, true)
+	sendButton.Position = UDim2.fromOffset(0, 5)
+
+	text(chatCard, {
+		Size = UDim2.new(1, 0, 0, 46),
+		BackgroundTransparency = 1,
+		Font = Enum.Font.Gotham,
+		TextSize = 11,
+		TextColor3 = Theme.Dim,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		TextWrapped = true,
+	}, "social_note")
+end
+
+
 ---------------------------------------------------------------
 -- sound
 ---------------------------------------------------------------
@@ -2919,7 +3152,7 @@ updateWatermark()
 local espGui = new("ScreenGui", {
 	Name = "OpusESP",
 	ResetOnSpawn = false,
-	IgnoreGuiInset = false,
+	IgnoreGuiInset = true,
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	DisplayOrder = 499,
 }, playerGui)
@@ -3054,13 +3287,30 @@ local function updateEsp()
 
 		local geometry
 		if shown then
-			local topPoint = camera:WorldToViewportPoint((root.CFrame * CFrame.new(0, 2.1, 0)).Position)
-			local bottomPoint = camera:WorldToViewportPoint((root.CFrame * CFrame.new(0, -3, 0)).Position)
-			if topPoint.Z > 0 and bottomPoint.Z > 0 then
-				local height = math.abs(topPoint.Y - bottomPoint.Y)
-				local width = height * 0.52
-				if height >= 24 and width >= 8 then
-					geometry = { x = topPoint.X - width / 2, y = topPoint.Y, width = width, height = height }
+			local okBox, boxCFrame, boxSize = pcall(function()
+				return character:GetBoundingBox()
+			end)
+
+			if okBox and boxSize and boxSize.Y > 0.1 then
+				local half = boxSize.Y / 2
+				local topWorld = boxCFrame.Position + Vector3.new(0, half, 0)
+				local bottomWorld = boxCFrame.Position - Vector3.new(0, half, 0)
+
+				local topPoint = camera:WorldToScreenPoint(topWorld)
+				local bottomPoint = camera:WorldToScreenPoint(bottomWorld)
+
+				if topPoint.Z > 0 and bottomPoint.Z > 0 then
+					local height = math.abs(topPoint.Y - bottomPoint.Y)
+					local ratio = math.clamp(boxSize.X / math.max(boxSize.Y, 0.01), 0.34, 0.95)
+					local width = height * ratio
+					if height >= 18 and width >= 6 then
+						geometry = {
+							x = topPoint.X - width / 2 + (State.esp.offsetX or 0),
+							y = math.min(topPoint.Y, bottomPoint.Y) + (State.esp.offsetY or 0),
+							width = width,
+							height = height,
+						}
+					end
 				end
 			end
 		end
@@ -3258,6 +3508,185 @@ task.spawn(function()
 		task.wait(1.7)
 	end
 end)
+
+---------------------------------------------------------------
+-- avatar preview
+---------------------------------------------------------------
+
+local avatarModel
+local avatarAngle = 0
+
+refreshAvatar = function()
+	if avatarModel then
+		avatarModel:Destroy()
+		avatarModel = nil
+	end
+
+	local character = localPlayer.Character
+	if not character then
+		return
+	end
+
+	local clone = character:Clone()
+	for _, item in ipairs(clone:GetDescendants()) do
+		if item:IsA("BaseScript") or item:IsA("Humanoid") or item:IsA("ForceField") then
+			item:Destroy()
+		end
+	end
+
+	clone:PivotTo(CFrame.new(0, 0, 0))
+	clone.Parent = avatarWorld
+	avatarModel = clone
+
+	local ok, box, size = pcall(function()
+		return clone:GetBoundingBox()
+	end)
+
+	if ok and size and size.Y > 0.1 then
+		local center = box.Position
+		local distance = size.Y * 1.55 + 1.8
+		avatarCamera.CFrame = CFrame.lookAt(center + Vector3.new(0, 0, -distance), center)
+	end
+
+	previewName.Text = localPlayer.DisplayName or localPlayer.Name
+	previewHandle.Text = "@" .. localPlayer.Name
+	avatarAngle = 0
+end
+
+RunService.RenderStepped:Connect(function(delta)
+	if not avatarModel or not menuOpen then
+		return
+	end
+	avatarAngle = (avatarAngle + delta * 24) % 360
+	avatarModel:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(avatarAngle), 0))
+end)
+
+refreshAvatar()
+
+localPlayer.CharacterAdded:Connect(function()
+	task.delay(0.7, refreshAvatar)
+	task.delay(2.5, refreshAvatar)
+end)
+
+---------------------------------------------------------------
+-- social — the parts other players can actually see
+---------------------------------------------------------------
+
+local customTrack
+local customAnimation
+
+local function liveHumanoid()
+	local character = localPlayer.Character
+	if not character then
+		return nil
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid and humanoid.Health > 0 then
+		return humanoid
+	end
+	return nil
+end
+
+playEmote = function(name)
+	local humanoid = liveHumanoid()
+	if not humanoid then
+		toast("toast_nocharacter")
+		return
+	end
+
+	local ok, played = pcall(function()
+		return humanoid:PlayEmote(name)
+	end)
+
+	if ok and played then
+		toast("toast_emote")
+	else
+		toast("toast_noemote")
+	end
+end
+
+playCustomAnimation = function(id)
+	id = tostring(id or "")
+	if id == "" then
+		toast("toast_badid")
+		return
+	end
+
+	local humanoid = liveHumanoid()
+	if not humanoid then
+		toast("toast_nocharacter")
+		return
+	end
+
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if not animator then
+		animator = new("Animator", {}, humanoid)
+	end
+
+	if customTrack then
+		customTrack:Stop()
+		customTrack = nil
+	end
+	if customAnimation then
+		customAnimation:Destroy()
+		customAnimation = nil
+	end
+
+	local animation = new("Animation", { AnimationId = "rbxassetid://" .. id }, humanoid)
+	customAnimation = animation
+
+	local ok, track = pcall(function()
+		return animator:LoadAnimation(animation)
+	end)
+
+	if ok and track then
+		customTrack = track
+		customTrack.Looped = true
+		customTrack:Play()
+		toast("toast_emote")
+	else
+		animation:Destroy()
+		customAnimation = nil
+		toast("toast_badid")
+	end
+end
+
+stopCustomAnimation = function()
+	if customTrack then
+		customTrack:Stop()
+		customTrack = nil
+		toast("toast_stopped")
+	end
+end
+
+sendChatMessage = function(message)
+	message = tostring(message or "")
+	if message == "" then
+		return
+	end
+
+	local TextChatService = game:GetService("TextChatService")
+	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		local channels = TextChatService:FindFirstChild("TextChannels")
+		local general = channels and channels:FindFirstChild("RBXGeneral")
+		if general then
+			local ok = pcall(function()
+				general:SendAsync(message)
+			end)
+			if ok then
+				return
+			end
+		end
+	end
+
+	local events = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+	local sayRequest = events and events:FindFirstChild("SayMessageRequest")
+	if sayRequest then
+		sayRequest:FireServer(message, "All")
+	else
+		toast("toast_chatfail")
+	end
+end
 
 ---------------------------------------------------------------
 -- frame loop
